@@ -194,6 +194,58 @@ internal fun BackgroundScreen(
         )
 
         FillPickerCard(selected = currentFill, onSelect = onSelect)
+
+        BlurBehindCard(
+            enabled = appearance.blurBehindEnabled,
+            radiusDp = appearance.blurBehindRadiusDp,
+            onEnabledChange = viewModel::setBlurBehindEnabled,
+            onRadiusChange = viewModel::setBlurBehindRadius,
+        )
+    }
+}
+
+@Composable
+private fun BlurBehindCard(
+    enabled: Boolean,
+    radiusDp: Int,
+    onEnabledChange: (Boolean) -> Unit,
+    onRadiusChange: (Int) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SettingsToggleCard(
+                shape = RoundedCornerShape(20.dp),
+                title = "Desenfoque del fondo",
+                description = "Difumina el contenido que queda detrás de la isla dinámica",
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+            )
+            AnimatedVisibility(visible = enabled) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AdjustableSlider(
+                        label = "Intensidad del desenfoque",
+                        valueText = radiusDp.toString() + " dp",
+                        value = radiusDp.toFloat(),
+                        valueRange = 0f..60f,
+                        step = 2f,
+                        onValueChange = { onRadiusChange(it.roundToInt()) },
+                        onCommit = {},
+                    )
+                    Text(
+                        text = "El efecto requiere Android 12 o superior y puede depender del soporte del fabricante.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 
