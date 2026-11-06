@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.vikram.expressiveisland.core.DynamicTile
+import com.vikram.expressiveisland.core.MediaSessionChoice
+import com.vikram.expressiveisland.core.MediaSessionSelectionBus
 import com.vikram.expressiveisland.core.SystemEventType
 import com.vikram.expressiveisland.data.ActionButtonAlignment
 import com.vikram.expressiveisland.data.ActionButtonStyle
@@ -181,6 +183,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptySet(),
         )
+
+    val availableMediaSessions: StateFlow<List<MediaSessionChoice>> = MediaSessionSelectionBus.choices
 
     val musicTile: StateFlow<MusicTileSettings> =
         musicTilePreferences.settings.stateIn(
@@ -373,6 +377,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setAppNormalOnly(packageName: String, normalOnly: Boolean) = viewModelScope.launch {
         appPreferences.setNormalOnly(packageName, normalOnly)
     }
+
+    fun selectMusicPlayer(packageName: String?) { MediaSessionSelectionBus.select(packageName) }
 
     fun setMusicShowAlbumArt(enabled: Boolean) = viewModelScope.launch {
         musicTilePreferences.setShowAlbumArt(enabled)
