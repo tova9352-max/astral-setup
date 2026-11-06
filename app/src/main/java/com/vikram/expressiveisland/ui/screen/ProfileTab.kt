@@ -312,6 +312,7 @@ private fun LanguageCard() {
         "en" -> stringResource(R.string.language_english)
         "hi" -> stringResource(R.string.language_hindi)
         "mr" -> stringResource(R.string.language_marathi)
+        "es" -> stringResource(R.string.language_spanish)
         else -> stringResource(R.string.language_system_default)
     }
 
@@ -320,6 +321,7 @@ private fun LanguageCard() {
         LanguageOption("en", stringResource(R.string.language_english), "english en"),
         LanguageOption("hi", stringResource(R.string.language_hindi), "hindi हिन्दी"),
         LanguageOption("mr", stringResource(R.string.language_marathi), "marathi मराठी"),
+        LanguageOption("es", stringResource(R.string.language_spanish), "spanish español es"),
     )
     val filteredLanguages = languages.filter {
         searchQuery.isBlank() ||
