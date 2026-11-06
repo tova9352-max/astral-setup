@@ -2744,6 +2744,12 @@ class IslandOverlayController(private val context: Context) {
                 layoutInDisplayCutoutMode =
                     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             }
+            // Android 12+ can blur the content behind this translucent accessibility overlay.
+            // Keep the radius restrained so text and notification content remain recognizable.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                blurBehindRadius = (18f * density).roundToInt()
+            }
         }
     }
 
