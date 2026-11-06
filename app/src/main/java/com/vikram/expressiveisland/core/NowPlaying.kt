@@ -22,6 +22,25 @@ object NowPlayingBus {
     }
 }
 
+/** A media app currently publishing a session that Astral can control. */
+data class MediaSessionChoice(
+    val packageName: String,
+    val appName: String,
+    val isPlaying: Boolean,
+)
+
+/** Shared session list and user preference for the player shown by the music tile. */
+object MediaSessionSelectionBus {
+    private val _choices = MutableStateFlow<List<MediaSessionChoice>>(emptyList())
+    val choices: StateFlow<List<MediaSessionChoice>> = _choices.asStateFlow()
+
+    private val _selectedPackage = MutableStateFlow<String?>(null)
+    val selectedPackage: StateFlow<String?> = _selectedPackage.asStateFlow()
+
+    fun updateChoices(value: List<MediaSessionChoice>) { _choices.value = value }
+    fun select(packageName: String?) { _selectedPackage.value = packageName }
+}
+
 /** A snapshot of the media session currently surfaced on the cutout, plus a handle to control it. */
 data class NowPlaying(
     val packageName: String,
