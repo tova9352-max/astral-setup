@@ -34,7 +34,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Configure debug signing key
+      - name: Configure debug signing key (persistent when configured)
         shell: bash
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.EXPRESSIVE_DEBUG_STORE_FILE }}
@@ -43,21 +43,20 @@ jobs:
           DEBUG_KEY_PASSWORD: ${{ secrets.EXPRESSIVE_DEBUG_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          for name in DEBUG_KEYSTORE_BASE64 DEBUG_STORE_PASSWORD DEBUG_KEY_ALIAS DEBUG_KEY_PASSWORD; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error::Required debug signing secret is missing: $name."
-              exit 1
-            fi
-          done
-          KEYSTORE_PATH="$RUNNER_TEMP/expressive-island-debug.jks"
-          printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
-          test -s "$KEYSTORE_PATH"
-          {
-            echo "EXPRESSIVE_DEBUG_STORE_FILE=$KEYSTORE_PATH"
-            echo "EXPRESSIVE_DEBUG_STORE_PASSWORD=$DEBUG_STORE_PASSWORD"
-            echo "EXPRESSIVE_DEBUG_KEY_ALIAS=$DEBUG_KEY_ALIAS"
-            echo "EXPRESSIVE_DEBUG_KEY_PASSWORD=$DEBUG_KEY_PASSWORD"
-          } >> "$GITHUB_ENV"
+          if [[ -n "${DEBUG_KEYSTORE_BASE64:-}" && -n "${DEBUG_STORE_PASSWORD:-}" && -n "${DEBUG_KEY_ALIAS:-}" && -n "${DEBUG_KEY_PASSWORD:-}" ]]; then
+            KEYSTORE_PATH="$RUNNER_TEMP/expressive-island-debug.jks"
+            printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+            test -s "$KEYSTORE_PATH"
+            {
+              echo "EXPRESSIVE_DEBUG_STORE_FILE=$KEYSTORE_PATH"
+              echo "EXPRESSIVE_DEBUG_STORE_PASSWORD=$DEBUG_STORE_PASSWORD"
+              echo "EXPRESSIVE_DEBUG_KEY_ALIAS=$DEBUG_KEY_ALIAS"
+              echo "EXPRESSIVE_DEBUG_KEY_PASSWORD=$DEBUG_KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "Persistent debug signing key configured."
+          else
+            echo "::warning::Persistent signing secrets are not configured. This preview will use GitHub's temporary debug key and may not update-install over later builds."
+          fi
 
       - name: Build signed debug APK
         run: ./gradlew assembleDebug --build-cache --parallel --no-daemon
