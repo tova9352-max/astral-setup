@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">एक्सप्रेसिव आयलंड</string>
+    <string name="app_name">Astral</string>
     <string name="language_title">अॅपची भाषा</string>
     <string name="language_desc">Expressive Island मध्ये वापरली जाणारी भाषा निवडा.</string>
     <string name="language_system_default">सिस्टमची भाषा</string>
