@@ -6,6 +6,7 @@
     <string name="language_english">English</string>
     <string name="language_hindi">Hindi</string>
     <string name="language_marathi">Marathi</string>
+    <string name="language_spanish">Spanish</string>
     <string name="language_selected">Selected</string>
     <string name="language_search_hint">Search languages</string>
     <string name="language_clear_search">Clear search</string>
