@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Expressive Island</string>
+    <string name="app_name">Astral</string>
     <string name="language_title">App language</string>
     <string name="language_desc">Choose the language used by Expressive Island.</string>
     <string name="language_system_default">System default</string>
