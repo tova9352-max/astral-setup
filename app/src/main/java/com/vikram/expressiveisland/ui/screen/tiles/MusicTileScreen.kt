@@ -44,6 +44,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
@@ -71,6 +72,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vikram.expressiveisland.R
+import com.vikram.expressiveisland.core.MediaSessionSelectionBus
 import com.vikram.expressiveisland.data.MusicButtonStyle
 import com.vikram.expressiveisland.data.MusicProgressStyle
 import com.vikram.expressiveisland.data.MusicVisualizerStyle
@@ -146,6 +148,9 @@ internal fun MusicTileScreen(
     var visualizerStyleDialog by remember { mutableStateOf(false) }
     var leftSeekTimeDialog by remember { mutableStateOf(false) }
     var rightSeekTimeDialog by remember { mutableStateOf(false) }
+    val mediaSessions by viewModel.availableMediaSessions.collectAsStateWithLifecycle()
+    val selectedMediaPackage by MediaSessionSelectionBus.selectedPackage.collectAsStateWithLifecycle()
+    var showPlayerPicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -154,6 +159,45 @@ internal fun MusicTileScreen(
             .padding(contentPadding),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+
+        // =====================================================================
+        // ACTIVE PLAYER
+        // =====================================================================
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable { showPlayerPicker = true },
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Text("Reproductor activo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                val selectedName = mediaSessions.firstOrNull { it.packageName == selectedMediaPackage }?.appName
+                Text(
+                    selectedName ?: mediaSessions.firstOrNull { it.isPlaying }?.appName ?: "Automático",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text("Toca para elegir Spotify, YouTube Music u otra app disponible", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (showPlayerPicker) {
+            AlertDialog(
+                onDismissRequest = { showPlayerPicker = false },
+                title = { Text("Elegir reproductor") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { viewModel.selectMusicPlayer(null); showPlayerPicker = false }) {
+                            Text("Automático")
+                        }
+                        mediaSessions.forEach { player ->
+                            TextButton(onClick = { viewModel.selectMusicPlayer(player.packageName); showPlayerPicker = false }) {
+                                Text(if (player.isPlaying) "●  ${player.appName} (reproduciendo)" else player.appName)
+                            }
+                        }
+                        if (mediaSessions.isEmpty()) Text("No hay reproductores multimedia activos. Inicia música y vuelve aquí.")
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showPlayerPicker = false }) { Text("Cerrar") } },
+            )
+        }
 
         // =====================================================================
         // MUSIC TILE
