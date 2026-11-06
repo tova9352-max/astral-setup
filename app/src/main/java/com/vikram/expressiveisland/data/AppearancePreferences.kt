@@ -48,6 +48,8 @@ data class AppearanceSettings(
     val preferDynamicIconColor: Boolean = DEFAULT_PREFER_DYNAMIC_ICON_COLOR,
     val backgroundNormal: CutoutFill = DEFAULT_BACKGROUND_FILL,
     val backgroundExpanded: CutoutFill = DEFAULT_BACKGROUND_FILL,
+    val blurBehindEnabled: Boolean = DEFAULT_BLUR_BEHIND_ENABLED,
+    val blurBehindRadiusDp: Int = DEFAULT_BLUR_BEHIND_RADIUS_DP,
     val sendButtonColor: CutoutColor? = DEFAULT_SEND_BUTTON_COLOR,
     val cancelButtonColor: CutoutColor? = DEFAULT_CANCEL_BUTTON_COLOR,
     val actionButtonStyle: ActionButtonStyle = DEFAULT_ACTION_BUTTON_STYLE,
@@ -70,6 +72,10 @@ data class AppearanceSettings(
 
         /** Match the pill's historical look: near-black fill, white stroke. */
         val DEFAULT_BACKGROUND_FILL: CutoutFill = CutoutFill.Solid(ColorSpec.Fixed(0xFF0A0A0A))
+        const val DEFAULT_BLUR_BEHIND_ENABLED = true
+        const val DEFAULT_BLUR_BEHIND_RADIUS_DP = 18
+        const val MIN_BLUR_BEHIND_RADIUS_DP = 0
+        const val MAX_BLUR_BEHIND_RADIUS_DP = 60
         val DEFAULT_STROKE_COLOR: CutoutColor = CutoutColor.Solid(0xFFFFFFFF)
         /** null means automatic high-contrast text color based on background luminance. */
         val DEFAULT_TEXT_COLOR: CutoutColor? = null
@@ -122,6 +128,9 @@ class AppearancePreferences(private val context: Context) : JsonSerializable {
                 ?: AppearanceSettings.DEFAULT_BACKGROUND_FILL,
             backgroundExpanded = CutoutFill.deserialize(prefs[BACKGROUND_EXPANDED] ?: prefs[BACKGROUND_COLOR])
                 ?: AppearanceSettings.DEFAULT_BACKGROUND_FILL,
+            blurBehindEnabled = prefs[BLUR_BEHIND_ENABLED] ?: AppearanceSettings.DEFAULT_BLUR_BEHIND_ENABLED,
+            blurBehindRadiusDp = (prefs[BLUR_BEHIND_RADIUS] ?: AppearanceSettings.DEFAULT_BLUR_BEHIND_RADIUS_DP)
+                .coerceIn(AppearanceSettings.MIN_BLUR_BEHIND_RADIUS_DP, AppearanceSettings.MAX_BLUR_BEHIND_RADIUS_DP),
             sendButtonColor = CutoutColor.deserialize(prefs[SEND_BUTTON_COLOR]),
             cancelButtonColor = CutoutColor.deserialize(prefs[CANCEL_BUTTON_COLOR]),
             actionButtonStyle = ActionButtonStyle.deserialize(prefs[ACTION_BUTTON_STYLE])
@@ -160,6 +169,8 @@ class AppearancePreferences(private val context: Context) : JsonSerializable {
             put("textColor", s.textColor?.serialize() ?: JSONObject.NULL)
             put("backgroundNormal", s.backgroundNormal.serialize())
             put("backgroundExpanded", s.backgroundExpanded.serialize())
+            put("blurBehindEnabled", s.blurBehindEnabled)
+            put("blurBehindRadiusDp", s.blurBehindRadiusDp)
             put("sendButtonColor", s.sendButtonColor?.serialize() ?: JSONObject.NULL)
             put("cancelButtonColor", s.cancelButtonColor?.serialize() ?: JSONObject.NULL)
             put("actionButtonStyle", s.actionButtonStyle.name)
@@ -203,6 +214,9 @@ class AppearancePreferences(private val context: Context) : JsonSerializable {
             if (obj.has("backgroundExpanded") && !obj.isNull("backgroundExpanded")) {
                 CutoutFill.deserialize(obj.optString("backgroundExpanded"))?.let { f -> it[BACKGROUND_EXPANDED] = f.serialize() }
             }
+            if (obj.has("blurBehindEnabled")) it[BLUR_BEHIND_ENABLED] = obj.getBoolean("blurBehindEnabled")
+            if (obj.has("blurBehindRadiusDp")) it[BLUR_BEHIND_RADIUS] = obj.getInt("blurBehindRadiusDp")
+                .coerceIn(AppearanceSettings.MIN_BLUR_BEHIND_RADIUS_DP, AppearanceSettings.MAX_BLUR_BEHIND_RADIUS_DP)
             it.applyNullableColor(obj, "sendButtonColor", SEND_BUTTON_COLOR)
             it.applyNullableColor(obj, "cancelButtonColor", CANCEL_BUTTON_COLOR)
             it.applyNullableColor(obj, "actionButtonColor", ACTION_BUTTON_COLOR)
@@ -299,6 +313,17 @@ class AppearancePreferences(private val context: Context) : JsonSerializable {
         it[BACKGROUND_EXPANDED] = fill.serialize()
     }
 
+    suspend fun setBlurBehindEnabled(enabled: Boolean) = context.appearanceDataStore.edit {
+        it[BLUR_BEHIND_ENABLED] = enabled
+    }
+
+    suspend fun setBlurBehindRadius(radiusDp: Int) = context.appearanceDataStore.edit {
+        it[BLUR_BEHIND_RADIUS] = radiusDp.coerceIn(
+            AppearanceSettings.MIN_BLUR_BEHIND_RADIUS_DP,
+            AppearanceSettings.MAX_BLUR_BEHIND_RADIUS_DP,
+        )
+    }
+
     /** A null [color] clears the override, restoring the accent-following default. */
     suspend fun setSendButtonColor(color: CutoutColor?) = context.appearanceDataStore.edit {
         if (color == null) it.remove(SEND_BUTTON_COLOR) else it[SEND_BUTTON_COLOR] = color.serialize()
@@ -383,6 +408,8 @@ class AppearancePreferences(private val context: Context) : JsonSerializable {
         val BACKGROUND_COLOR = stringPreferencesKey("background_color")
         val BACKGROUND_NORMAL = stringPreferencesKey("background_normal")
         val BACKGROUND_EXPANDED = stringPreferencesKey("background_expanded")
+        val BLUR_BEHIND_ENABLED = booleanPreferencesKey("blur_behind_enabled")
+        val BLUR_BEHIND_RADIUS = intPreferencesKey("blur_behind_radius_dp")
         val SEND_BUTTON_COLOR = stringPreferencesKey("send_button_color")
         val CANCEL_BUTTON_COLOR = stringPreferencesKey("cancel_button_color")
         val ACTION_BUTTON_STYLE = stringPreferencesKey("action_button_style")
