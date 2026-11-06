@@ -19,6 +19,8 @@ import com.vikram.expressiveisland.core.MediaProgress
 import com.vikram.expressiveisland.core.MediaTransport
 import com.vikram.expressiveisland.core.NowPlaying
 import com.vikram.expressiveisland.core.NowPlayingBus
+import com.vikram.expressiveisland.core.MediaSessionChoice
+import com.vikram.expressiveisland.core.MediaSessionSelectionBus
 import com.vikram.expressiveisland.data.AppPreferences
 import com.vikram.expressiveisland.data.DynamicTilePreferences
 import com.vikram.expressiveisland.overlay.loadImageBitmapOrNull
@@ -60,6 +62,7 @@ class MediaPlaybackMonitor(private val context: Context) {
 
     // The track last surfaced as a "show" signal, so we don't re-pop on every state tick.
     private var lastShownKey: String? = null
+    private val selectionPrefs by lazy { context.getSharedPreferences("media_session_selection", Context.MODE_PRIVATE) }
 
     // Artwork must survive playback-position callbacks. Many players publish a new PlaybackState
     // every second; decoding the same cover again and publishing null first makes the tile flicker.
@@ -74,6 +77,13 @@ class MediaPlaybackMonitor(private val context: Context) {
         }
 
     fun start() {
+        MediaSessionSelectionBus.select(selectionPrefs.getString(KEY_SELECTED_PACKAGE, null))
+        scope.launch {
+            MediaSessionSelectionBus.selectedPackage.collect { selected ->
+                selectionPrefs.edit().putString(KEY_SELECTED_PACKAGE, selected).apply()
+                sync()
+            }
+        }
         val manager = sessionManager ?: return
         scope.launch {
             dynamicTilePreferences.enabled.collect { enabled ->
@@ -108,6 +118,7 @@ class MediaPlaybackMonitor(private val context: Context) {
         clearPendingShow()
         requestedArtworkKey = null
         NowPlayingBus.update(null)
+        MediaSessionSelectionBus.updateChoices(emptyList())
     }
 
     private fun clearPendingShow() {
@@ -169,8 +180,21 @@ class MediaPlaybackMonitor(private val context: Context) {
             }
         }
 
-        val primary =
-            validControllers.firstOrNull { it.isPlaying } ?: validControllers.firstOrNull()
+        MediaSessionSelectionBus.updateChoices(
+            validControllers.map { controller ->
+                val appName = runCatching {
+                    context.packageManager.getApplicationLabel(
+                        context.packageManager.getApplicationInfo(controller.packageName, 0)
+                    ).toString()
+                }.getOrDefault(controller.packageName)
+                MediaSessionChoice(controller.packageName, appName, controller.isPlaying)
+            }.distinctBy { it.packageName }.sortedBy { it.appName.lowercase() }
+        )
+        val selectedPackage = MediaSessionSelectionBus.selectedPackage.value
+        val primary = validControllers.firstOrNull { it.packageName == selectedPackage }
+            ?: validControllers.filter { it.isPlaying }
+                .maxByOrNull { it.playbackState?.lastPositionUpdateTime ?: 0L }
+            ?: validControllers.firstOrNull()
         if (primary == null) {
             NowPlayingBus.update(null)
             requestedArtworkKey = null
@@ -382,5 +406,6 @@ class MediaPlaybackMonitor(private val context: Context) {
     private companion object {
         const val TAG = "MediaPlaybackMonitor"
         const val SHOW_DEBOUNCE_MS = 250L
+        const val KEY_SELECTED_PACKAGE = "selected_media_package"
     }
 }
