@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Expressive Cutout"
+rootProject.name = "Astral"
 include(":app")
