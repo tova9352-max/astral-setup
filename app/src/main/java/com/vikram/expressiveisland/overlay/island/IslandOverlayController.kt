@@ -755,6 +755,8 @@ class IslandOverlayController(private val context: Context) {
     private fun observeAppearance() = scope.launch {
         appearancePreferences.settings.collect {
             appearanceState.value = it
+            // Apply blur changes immediately to the existing overlay window.
+            layoutParams?.let { params -> applyBlurBehind(params, it) }
             // The action-button height feeds the expanded window's extra room; keep them in step.
             syncWindowSize()
         }
@@ -2744,12 +2746,22 @@ class IslandOverlayController(private val context: Context) {
                 layoutInDisplayCutoutMode =
                     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             }
-            // Android 12+ can blur the content behind this translucent accessibility overlay.
-            // Keep the radius restrained so text and notification content remain recognizable.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                blurBehindRadius = (18f * density).roundToInt()
-            }
+            applyBlurBehind(this, appearanceState.value)
+        }
+    }
+
+    /** Applies the user's real system blur preference to the translucent overlay window. */
+    private fun applyBlurBehind(
+        params: WindowManager.LayoutParams,
+        settings: AppearanceSettings,
+    ) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        if (settings.blurBehindEnabled && settings.blurBehindRadiusDp > 0) {
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+            params.blurBehindRadius = (settings.blurBehindRadiusDp * density).roundToInt()
+        } else {
+            params.flags = params.flags and WindowManager.LayoutParams.FLAG_BLUR_BEHIND.inv()
+            params.blurBehindRadius = 0
         }
     }
 
