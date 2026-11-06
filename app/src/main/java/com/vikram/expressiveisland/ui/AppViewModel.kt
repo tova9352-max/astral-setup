@@ -934,6 +934,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         appearancePreferences.setBackgroundExpanded(fill)
     }
 
+    fun setBlurBehindEnabled(enabled: Boolean) = viewModelScope.launch {
+        appearancePreferences.setBlurBehindEnabled(enabled)
+    }
+
+    fun setBlurBehindRadius(radiusDp: Int) = viewModelScope.launch {
+        appearancePreferences.setBlurBehindRadius(radiusDp)
+    }
+
     fun setSendButtonColor(color: CutoutColor?) = viewModelScope.launch {
         appearancePreferences.setSendButtonColor(color)
     }
